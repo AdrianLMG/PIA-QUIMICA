@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trabajo Final - Planta de Reciclaje Hidrometalúrgica</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary: #1e4620;
+            --primary-light: #e8f5e9;
+            --accent: #1565c0;
+            --dark: #2c3e50;
+            --text-muted: #64748b;
+            --bg: #f8fafc;
+            --steel: #455a64;
+            --zinc: #1565c0;
+            --manganese: #6a1b9a;
+            --waste: #c62828;
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            background-color: var(--bg);
+            color: var(--dark);
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- MENÚ LATERAL (SIDEBAR) --- */
+        .sidebar {
+            width: 290px;
+            background-color: var(--dark);
+            color: white;
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+            box-shadow: 4px 0 10px rgba(0,0,0,0.1);
+            overflow-y: auto;
+        }
+
+        .sidebar h2 {
+            font-size: 16px;
+            text-align: center;
+            padding: 0 15px 20px 15px;
+            margin: 0;
+            border-bottom: 1px solid #3e5266;
+            color: #a5d6a7;
+            line-height: 1.4;
+        }
+
+        .sidebar h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 20px 25px 5px 25px;
+            margin: 0;
+            color: #8fa4b8;
+        }
+
+        .menu-btn {
+            background: none;
+            border: none;
+            color: #cbd5e1;
+            width: 100%;
+            text-align: left;
+            padding: 12px 25px;
+            font-size: 13.5px;
+            cursor: pointer;
+            transition: all 0.2s;
+            outline: none;
+        }
+
+        .menu-btn:hover, .menu-btn.active {
+            background-color: #34495e;
+            color: white;
+            border-left: 4px solid #4caf50;
+            padding-left: 21px;
+        }
+
+        /* --- CONTENEDOR PRINCIPAL --- */
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 40px;
+            box-sizing: border-box;
+        }
+
+        .section-panel {
+            display: none;
+            background: white;
+            padding: 35px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            animation: fadeIn 0.3s ease;
+        }
+
+        .section-panel.active { display: block; }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        h1, h2, h3 { color: var(--primary); margin-top: 0; }
+        p, li { line-height: 1.6; color: #334155; text-align: justify; }
+        
+        .equation {
+            background: #f1f5f9;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: 'Courier New', Courier, monospace;
+            font-weight: bold;
+            color: var(--accent);
+            border-left: 4px solid var(--accent);
+            margin: 15px 0;
+        }
+
+        /* --- DASHBOARD DEL SIMULADOR --- */
+        .grid-simulador {
+            display: grid;
+            grid-template-columns: 320px 1fr;
+            gap: 30px;
+            margin-top: 20px;
+        }
+
+        .config-card {
+            background: var(--primary-light);
+            padding: 22px;
+            border-radius: 10px;
+            border: 1px solid #c8e6c9;
+            height: fit-content;
+        }
+
+        .form-group {
+            margin-bottom: 18px;
+        }
+
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .form-group select, .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #a5d6a7;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+
+        .btn-calc {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 15px;
+            transition: background 0.2s;
+        }
+
+        .btn-calc:hover { background: #1b5e20; }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .metric-box {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.01);
+        }
+
+        .metric-box h4 { margin: 0 0 5px 0; font-size: 11px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .metric-box p { margin: 0; font-size: 22px; font-weight: bold; color: var(--dark); }
+
+        /* --- CONTENEDORES DE GRÁFICAS --- */
+        .charts-dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-top: 15px;
+        }
+
+        .chart-holder {
+            border: 1px solid #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            background: #fff;
+            max-height: 260px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .chart-holder h4 {
+            margin: 0 0 10px 0;
+            font-size: 13px;
+            color: var(--dark);
+            text-align: center;
+        }
+
+        #simLog {
+            background: #fffde7;
+            border-left: 4px solid #fbc02d;
+            padding: 12px;
+            border-radius: 4px;
+            font-size: 13.5px;
+            color: #5d4037;
+            margin-bottom: 15px;
+        }
+
+        /* --- TABLAS --- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #e2e8f0;
+            padding: 12px;
+            text-align: left;
+            font-size: 14.5px;
+        }
+        th { background-color: #f1f5f9; color: var(--dark); }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar">
+        <h2>Diseño Conceptual de Planta<br><span style="color:#fff; font-size:12px; font-weight:normal;">Proyecto Final Integrador</span></h2>
+        
+        <h3>Estructura Teórica</h3>
+        <button class="menu-btn active" onclick="verSeccion('intro')">1. Introducción y Problema</button>
+        <button class="menu-btn" onclick="verSeccion('contexto')">2. Contexto y Objetivos</button>
+        <button class="menu-btn" onclick="verSeccion('teorico')">3. Marco Teórico</button>
+        
+        <h3>Ingeniería y Simulación</h3>
+        <button class="menu-btn" onclick="verSeccion('proceso')">4. Fases del Proceso</button>
+        <button class="menu-btn" id="btn-nav-simulador" onclick="verSeccion('simulador')">💻 Panel de Simulación Grafica</button>
+        
+        <h3>Parámetros de Gestión</h3>
+        <button class="menu-btn" onclick="verSeccion('impacto')">5. Impacto y Seguridad</button>
+        <button class="menu-btn" onclick="verSeccion('cronograma')">6. Plan de Trabajo</button>
+        <button class="menu-btn" onclick="verSeccion('cierre')">7. Conclusión y Bibliografía</button>
+    </div>
+
+    <div class="main-content">
+
+        <div id="intro" class="section-panel active">
+            <h1>Introducción</h1>
+            <p>El crecimiento acelerado del uso de dispositivos electrónicos y sistemas de almacenamiento energético ha incrementado significativamente la generación de residuos de baterías. Estas contienen metales pesados y compuestos químicos que representan un riesgo ambiental y sanitario si no se gestionan adecuadamente.</p>
+            <p>El reciclaje de baterías se ha convertido en una necesidad estratégica dentro del modelo de economía circular, ya que permite recuperar materiales valiosos como litio, cobalto y níquel, reduciendo la dependencia de la minería primaria y minimizando la huella de carbono industrial.</p>
+            <p>Este proyecto propone el diseño conceptual de una planta industrial de reciclaje de baterías basada en procesos hidrometalúrgicos, integrando de forma sistémica principios de química aplicada, ingeniería de procesos, sostenibilidad e innovación tecnológica.</p>
+            
+            <h2>Planteamiento del Problema</h2>
+            <p>El manejo inadecuado de baterías usadas provoca contaminación irreversible del suelo, mantos acuíferos y aire, además de riesgos latentes de incendio urbano por descontrol térmico y exposición humana a sustancias altamente tóxicas. La falta de sistemas industriales accesibles, normados y tecnológicamente eficientes limita severamente el aprovechamiento de los materiales valiosos contenidos en estos residuos.</p>
+            
+            <h2>Justificación</h2>
+            <p>Este proyecto es de alta relevancia porque propone una solución técnica integral fundamentada en la química analítica y fisicoquímica para el tratamiento de pasivos ambientales a gran escala. La recuperación controlada de metales reduce de manera directa el impacto ambiental crítico, optimiza los recursos de manufactura secundaria y contribuye al desarrollo sostenible de la infraestructura energética local.</p>
+        </div>
+
+        <div id="contexto" class="section-panel">
+            <h1>Análisis de Contexto</h1>
+            <p><strong>A nivel internacional:</strong> El reciclaje avanzado de baterías forma parte prioritaria de las agendas geopolíticas internacionales para mitigar el desabasto de materiales críticos necesarios en la transición energética global. Países industrializados de Europa y Asia lideran actualmente la implementación de refinerías circulares automatizadas.</p>
+            <p><strong>En México y Nuevo León:</strong> El ecosistema de reciclaje de baterías presenta severas brechas en infraestructura técnica, normatividad específica y cultura de separación en origen, propiciando la acumulación masiva de residuos peligrosos en tiraderos comunes. En Nuevo León, esta problemática se agrava debido a la alta densidad industrial automotriz, el elevado consumo de dispositivos digitales y la ausencia de plantas locales capaces de procesar metalurgia húmeda.</p>
+            
+            <hr style="border:0; border-top:1px solid #e2e8f0; margin:30px 0;">
+            
+            <h2>Pregunta de Investigación</h2>
+            <div class="equation">¿Cómo puede diseñarse un sistema industrial basado en procesos químicos que permita el reciclaje eficiente de baterías y la recuperación de materiales valiosos?</div>
+            
+            <h2>Objetivos del Proyecto</h2>
+            <h3>Objetivo General</h3>
+            <p>Diseñar un modelo conceptual de planta industrial para el reciclaje de baterías mediante procesos hidrometalúrgicos.</p>
+            <h3>Objetivos Específicos</h3>
+            <ul>
+                <li>Analizar la composición química y la estequiometría interna de los sistemas de almacenamiento.</li>
+                <li>Diseñar las etapas de un proceso industrial balanceado de reciclaje.</li>
+                <li>Identificar y modelar las variables químicas operacionales clave (pH, temperatura, concentración).</li>
+                <li>Evaluar el impacto ambiental neto y la viabilidad técnica/económica de la planta.</li>
+            </ul>
+        </div>
+
+        <div id="teorico" class="section-panel">
+            <h1>Marco Teórico</h1>
+            <p>Las baterías operan bajo principios electroquímicos de celdas galvánicas y de acumulación, encapsulando compuestos químicos capaces de transferir electrones de manera reversible. Dentro de la masa activa, se localizan metales de alto valor estratégico y comercial:</p>
+            <ul>
+                <li><strong>Litio (Li):</strong> Portador de carga fundamental de los sistemas recargables de última generación.</li>
+                <li><strong>Cobalto (Co) y Níquel (Ni):</strong> Transiciones metálicas esenciales en la estabilización energética cristalina del cátodo.</li>
+                <li><strong>Plomo (Pb):</strong> Elemento denso constitutivo de acumuladores automotrices pesados convencionales.</li>
+            </ul>
+
+            <h2>Vías Tecnológicas de Reciclaje</h2>
+            <p>El tratamiento a escala macro de estos residuos se clasifica en tres metodologías estándar:</p>
+            <ol>
+                <li><strong>Pirometalurgia:</strong> Reducción en hornos de fundición a temperaturas extremas (>1200°C). Provoca un alto gasto energético y emisiones gaseosas complejas que requieren sistemas avanzados de filtrado.</li>
+                <li><strong>Hidrometalurgia (Eje de este proyecto):</strong> Extracción y purificación por vía húmeda utilizando soluciones acuosas ácidas y básicas. Presenta un consumo energético drásticamente menor, nula emisión de gases de fundición y tasas de pureza de recuperación superiores al 90%.</li>
+                <li><strong>Reciclaje Directo:</strong> Remoción física y reacondicionamiento mecánico del polvo catódico sin desarmar las moléculas originales.</li>
+            </ol>
+        </div>
+
+        <div id="proceso" class="section-panel">
+            <h1>Descripción del Proceso Industrial</h1>
+            <p>La arquitectura del sistema conceptual de la planta se divide en 5 bloques secuenciales de transformación física y química:</p>
+            
+            <h3>Etapa 1: Recolección y Clasificación</h3>
+            <p>Recepción regulada de lotes, separación minuciosa por tecnologías químicas (Litio-Ion, Alcalinas, Plomo) e inspección automatizada para prevenir cortocircuitos e incendios espontáneos.</p>
+            
+            <h3>Etapa 2: Pretratamiento Mecánico</h3>
+            <p>Molienda protegida bajo atmósfera controlada para triturar carcasas, separación magnética de alta intensidad para retirar las cubiertas de acero ferroso, y operaciones de tamizado industrial para concentrar la fracción fina rica en óxidos metálicos, conocida como <b>Masa Negra (Black Mass)</b>.</p>
+            
+            <h3>Etapa 3: Lixiviación Química</h3>
+            <p>Inyección de la masa negra en reactores agitados térmicamente donde los ácidos fuertes disuelven los metales, rompiendo los enlaces de los óxidos sólidos hacia fases iónicas líquidas solubles:</p>
+            <div class="equation">NiO + 2HCl → NiCl₂ + H₂O</div>
+            <div class="equation">CoO + 2HCl → CoCl₂ + H₂O</div>
+
+            <h3>Etapa 4: Extracción y Precipitación Selectiva</h3>
+            <p>Ajuste de la curva de pH en reactores secundarios mediante soluciones alcalinas (como NaOH). Modificando la solubilidad del medio, los iones metálicos cambian de estado de agregación precipitando como sólidos:</p>
+            <div class="equation">Co²⁺ + 2OH⁻ → Co(OH)₂ ↓</div>
+
+            <h3>Etapa 5: Refinación</h3>
+            <p>Filtración por prensa, lavado e inactivación de impurezas químicas y secado técnico para obtener sales u óxidos puros aptos para la cadena de suministro de nuevas baterías.</p>
+        </div>
+
+        <div id="simulador" class="section-panel">
+            <h1>💻 Simulador Químico del Reactor de Lixiviación</h1>
+            <p>Esta herramienta ejecuta de forma algorítmica los balances químicos y cinéticos del reactor principal basándose en las variables físicas que definas. Observa cómo cambian las gráficas automáticas según tus decisiones operacionales.</p>
+            
+            <div class="grid-simulador">
+                <div class="config-card">
+                    <h3>Parámetros Químicos</h3>
+                    
+                    <div class="form-group">
+                        <label>Masa Negra Alimentada (kg):</label>
+                        <input type="number" id="inputMasa" value="500" min="50" max="5000">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Temperatura Operacional (°C):</label>
+                        <select id="selectTemp">
+                            <option value="25">25°C (Ambiente - Cinética Lenta)</option>
+                            <option value="45">45°C (Moderada)</option>
+                            <option value="70" selected>70°C (Óptima Industrial)</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Concentración del Ácido (Molar):</label>
+                        <select id="selectAcido">
+                            <option value="1">1.0 M (Disolución Débil)</option>
+                            <option value="2" selected>2.0 M (Estequiometría Balanceada)</option>
+                            <option value="4">4.0 M (Alta Concentración)</option>
+                        </select>
+                    </div>
+
+                    <button class="btn-calc" onclick="ejecutarSimuladorGrafico()">Simular Reacciones</button>
+                </div>
+
+                <div>
+                    <div id="simLog">Sistema listo. Configura los parámetros y presiona el botón para graficar.</div>
+                    
+                    <div class="metrics-grid">
+                        <div class="metric-box">
+                            <h4>Eficiencia de Extracción</h4>
+                            <p id="txtEficiencia" style="color: var(--primary);">0%</p>
+                        </div>
+                        <div class="metric-box">
+                            <h4>Efluentes Líquidos</h4>
+                            <p id="txtLiquido">0 L</p>
+                        </div>
+                    </div>
+
+                    <div class="charts-dashboard">
+                        <div class="chart-holder">
+                            <h4>Distribución de Productos Obtenidos (kg)</h4>
+                            <canvas id="chartPie"></canvas>
+                        </div>
+                        <div class="chart-holder">
+                            <h4>Eficiencia vs Pérdidas (%)</h4>
+                            <canvas id="chartBar"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="impacto" class="section-panel">
+            <h1>Evaluación de Impacto y Seguridad Industrial</h1>
+            
+            <h2>Impacto Ambiental Neto</h2>
+            <p><strong>Factores Positivos:</strong> Mitigación radical del confinamiento de metales pesados en vertederos comunes, reducción de la degradación ambiental en zonas mineras extractivas de materias primas vírgenes y fomento del modelo circular de huella de carbono reducida.</p>
+            <p><strong>Factores Negativos:</strong> Manejo intensivo de reactivos corrosivos peligrosos y generación obligada de efluentes líquidos ácidos con alta carga iónica.</p>
+            <p><strong>Estrategia de Mitigación (Solución):</strong> Integración de un módulo secundario de Tratamiento de Aguas Residuales Industriales (TARI) enfocado en la neutralización ácida automatizada, precipitación controlada de lodos metálicos remanentes y recirculación del agua de proceso (Descarga Cero).</p>
+            
+            <h2>Higiene y Seguridad Industrial</h2>
+            <ul>
+                <li>Uso obligatorio y permanente de Equipo de Protección Personal (EPP) específico para riesgos químicos (trajes Tychem, máscaras con filtros para vapores ácidos, guantes de nitrilo pesado).</li>
+                <li>Instalación de extractores localizados con lavadores de gases químicos (Scrubbers) en la parte superior de los reactores de lixiviación.</li>
+                <li>Monitoreo automatizado e ininterrumpido de temperatura en el almacén primario de celdas para evitar eventos de fuga térmica (thermal runaway).</li>
+            </ul>
+        </div>
+
+        <div id="cronograma" class="section-panel">
+            <h1>Plan de Trabajo y Calendarización</h1>
+            <p>El proyecto a nivel corporativo modela las fases de una refinería conceptual de gran calado. A nivel escolar, la ejecución metódica y el desarrollo integral de este modelo representativo se distribuye a lo largo de un cronograma de 8 semanas de trabajo estructurado:</p>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Línea de Tiempo (Semanas)</th>
+                        <th>Fases de Trabajo Académico y Técnico</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr><td><b>Semana 1: Investigación</b></td><td>Recopilación de literatura científica internacional, análisis de patentes hidrometalúrgicas y revisión del marco legal local.</td></tr>
+                    <tr><td><b>Semana 2: Diseño</b></td><td>Cálculo de balances de masa conceptuales y diagramas de flujo de bloques del proceso (PFD).</td></tr>
+                    <tr><td><b>Semana 3: Desarrollo</b></td><td>Formulación de las ecuaciones matemáticas estequiométricas y cinéticas de las reacciones de lixiviación ácida.</td></tr>
+                    <tr><td><b>Semana 4: Construcción</b></td><td>Estructuración del motor de cómputo algorítmico y codificación de los módulos en la interfaz web representativa.</td></tr>
+                    <tr><td><b>Semana 5: Pruebas</b></td><td>Corridas de simulación del comportamiento de los reactores químicos variando temperatura y pH.</td></tr>
+                    <tr><td><b>Semana 6: Ajustes</b></td><td>Optimización de las curvas de eficiencia y calibración de coeficientes limitantes químicos del modelo gráfico.</td></tr>
+                    <tr><td><b>Semana 7: Presentación</b></td><td>Defensa técnica del modelo conceptual ante el sínodo y evaluadores del área de ciencias químicas.</td></tr>
+                    <tr><td><b>Semana 8: Cierre</b></td><td>Compilación de la memoria técnica final, indexación bibliográfica y entrega del repositorio del proyecto.</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div id="cierre" class="section-panel">
+            <h1>Conclusión</h1>
+            <p>El diseño conceptual de una planta de reciclaje de baterías mediante procesos hidrometalúrgicos constituye una alternativa tecnológica madura, viable y con un perfil de alta sostenibilidad para resolver la crisis de pasivos ambientales derivada del almacenamiento energético en regiones altamente industriales como Nuevo León. Los resultados de este modelado demuestran de forma contundente que la aplicación estratégica de principios fisicoquímicos en la ingeniería de procesos permite romper el esquema lineal de consumo, transformando residuos tóxicos de alto riesgo en recursos químicos de alta pureza comercial, consolidando las bases de la innovación tecnológica sustentable.</p>
+            
+            <h2>Bibliografía Consultada (Formato APA)</h2>
+            <ul style="list-style-type: none; padding-left: 0;">
+                <li style="margin-bottom: 12px; padding-left: 20px; text-indent: -20px;">Diario Oficial de la Federación. (2017). <i>NOM-212-SCFI-2017: Productos eléctricos-pilas y baterías de óxido de manganeso, de litio y de tipo botón-Especificaciones y métodos de prueba.</i></li>
+                <li style="margin-bottom: 12px; padding-left: 20px; text-indent: -20px;">Environmental Protection Agency. (2023). <i>Used lithium-ion batteries: Management, critical mineral recovery, and recycling guidelines for industrial facilities.</i></li>
+                <li style="margin-bottom: 12px; padding-left: 20px; text-indent: -20px;">International Energy Agency. (2024). <i>Global EV Outlook 2024: Scaling up the recycling infrastructure for clean energy transitions.</i></li>
+                <li style="margin-bottom: 12px; padding-left: 20px; text-indent: -20px;">Secretaría de Medio Ambiente y Recursos Naturales. (2020). <i>Diagnóstico e indicadores para la gestión sustentable de pilas y baterías usadas en México.</i></li>
+            </ul>
+        </div>
+
+    </div>
+
+    <script>
+        // Variables globales para retener las instancias de los gráficos y poder destruirlos/actualizarlos limpiamente
+        let chartInstanciaPie = null;
+        let chartInstanciaBar = null;
+
+        // Lógica de navegación del Menú Lateral
+        function verSeccion(idSeccion) {
+            document.querySelectorAll('.section-panel').forEach(panel => panel.classList.remove('active'));
+            document.querySelectorAll('.menu-btn').forEach(btn => btn.classList.remove('active'));
+            
+            document.getElementById(idSeccion).classList.add('active');
+            event.target.classList.add('active');
+
+            // Inicializar las gráficas por defecto si el usuario entra a la pestaña del simulador por primera vez
+            if(idSeccion === 'simulador' && chartInstanciaPie === null) {
+                setTimeout(ejecutarSimuladorGrafico, 100);
+            }
+        }
+
+        // MOTOR MATEMÁTICO - QUÍMICO Y RENDERIZADOR DE GRÁFICOS
+        function ejecutarSimuladorGrafico() {
+            const masa = parseFloat(document.getElementById("inputMasa").value);
+            const temp = parseFloat(document.getElementById("selectTemp").value);
+            const acido = parseFloat(document.getElementById("selectAcido").value);
+
+            if(isNaN(masa) || masa <= 0) {
+                alert("Por favor, introduce una masa de alimentación válida.");
+                return;
+            }
+
+            // Algoritmo cinético de eficiencia química basado en tus variables operacionales
+            let eficiencia = 50;
+            
+            if(temp === 45) eficiencia += 22;
+            if(temp === 70) eficiencia += 40; // Temperatura termodinámicamente ideal
+
+            if(acido === 2) eficiencia += 6;
+            if(acido === 4) eficiencia += 2; // El exceso de molaridad disminuye la selectividad, rendimiento plano
+            
+            if(eficiencia > 96.5) eficiencia = 96.5; // Límite cinético del sistema húmedo
+
+            // Relación de metales constitutivos promedio recuperables de la masa negra
+            const kgNi = masa * 0.12 * (eficiencia / 100);  // Contenido base de Níquel: 12%
+            const kgCo = masa * 0.15 * (eficiencia / 100);  // Contenido base de Cobalto: 15%
+            const kgResiduoSolido = masa - (kgNi + kgCo);
+            const litrosEfluente = masa * acido * 1.8;
+
+            // Actualizar textos informativos en pantalla
+            document.getElementById("txtEficiencia").innerText = eficiencia.toFixed(1) + "%";
+            document.getElementById("txtLiquido").innerText = litrosEfluente.toFixed(0) + " L";
+
+            // Modificar la bitácora según las combinaciones termodinámicas elegidas
+            let logger = document.getElementById("simLog");
+            if(eficiencia > 90) {
+                logger.innerHTML = "🚀 <b>Óptimo:</b> Alta transferencia de masa. La temperatura de 70°C rompe eficientemente la matriz cristalina del óxido.";
+                logger.style.background = "#e8f5e9"; logger.style.borderLeftColor = "#2e7d32"; logger.style.color = "#1b5e20";
+            } else if(temp === 25) {
+                logger.innerHTML = "⚠️ <b>Deficiencia:</b> Operar a 25°C genera una energía de activación insuficiente, ralentizando drásticamente la disolución.";
+                logger.style.background = "#ffebee"; logger.style.borderLeftColor = "#c62828"; logger.style.color = "#b71c1c";
+            } else {
+                logger.innerHTML = "💡 <b>Nota de Proceso:</b> Rendimiento operativo intermedio. Incrementa la temperatura a 70°C para maximizar la solubilidad iónica.";
+                logger.style.background = "#fffde7"; logger.style.borderLeftColor = "#fbc02d"; logger.style.color = "#5d4037";
+            }
+
+            // --- DESTRUCCIÓN DE INSTANCIAS PREVIAS (Obligatorio en Chart.js para evitar parpadeos) ---
+            if(chartInstanciaPie) chartInstanciaPie.destroy();
+            if(chartInstanciaBar) chartInstanciaBar.destroy();
+
+            // --- 1. CONFIGURACIÓN DEL GRÁFICO CIRCULAR (PIE CHART) ---
+            const ctxPie = document.getElementById('chartPie').getContext('2d');
+            chartInstanciaPie = new Chart(ctxPie, {
+                type: 'pie',
+                data: {
+                    labels: ['Níquel Recuperado', 'Cobalto Recuperado', 'Residuos Sólidos'],
+                    datasets: [{
+                        data: [kgNi.toFixed(1), kgCo.toFixed(1), kgResiduoSolido.toFixed(1)],
+                        backgroundColor: ['#1565c0', '#6a1b9a', '#94a3b8'],
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: { position: 'bottom', labels: { boxWidth: 12, font: { size: 11 } } }
+                    }
+                }
+            });
+
+            // --- 2. CONFIGURACIÓN DEL GRÁFICO DE BARRAS (BAR CHART) ---
+            const ctxBar = document.getElementById('chartBar').getContext('2d');
+            chartInstanciaBar = new Chart(ctxBar, {
+                type: 'bar',
+                data: {
+                    labels: ['Extracción Éxito %', 'Pérdida Neto %'],
+                    datasets: [{
+                        label: 'Eficiencia Global',
+                        data: [eficiencia.toFixed(1), (100 - eficiencia).toFixed(1)],
+                        backgroundColor: ['#2e7d32', '#c62828'],
+                        borderRadius: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        y: { beginAtZero: true, max: 100, ticks: { font: { size: 10 } } },
+                        x: { ticks: { font: { size: 11 } } }
+                    },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+    </script>
+</body>
+</html>
